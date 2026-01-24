@@ -1,13 +1,17 @@
 import Image from "next/image";
 import Logo from "../../public/logo.png";
-import { Button } from "@/components/ui/button";
-import { LogIn } from "lucide-react";
 import { Rabbit } from "lucide-react";
 import { Shield } from "lucide-react";
 import { Bell } from "lucide-react";
+import AddProductForm from "@/components/AddProduct-Form";
+import AuthButton from "@/components/AuthButton";
+import { createClient } from "@/utils/supabase/server";
 
-export default function Home() {
-  const user = null;
+export default async function Home() {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
   const products = [];
 
@@ -40,14 +44,7 @@ export default function Home() {
           </div>
 
           {/* Auth Button */}
-          <Button
-            variant="default"
-            size="sm"
-            className="bg-orange-500 hover:bg-orange-600 gap-2"
-          >
-            <LogIn className="w-4 h-4 " />
-            Signup
-          </Button>
+          <AuthButton user={user} />
         </div>
       </header>
 
@@ -67,6 +64,8 @@ export default function Home() {
           </p>
 
           {/* Add Product Form */}
+          <AddProductForm user={user} />
+
           {/* Features */}
           {products.length === 0 && (
             <div className="grid md:grid-cols-3 gap-6 max-w-4xl mx-auto mt-16">
