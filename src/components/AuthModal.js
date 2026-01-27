@@ -1,37 +1,39 @@
 "use client";
-import { Button } from "@/components/ui/button";
+
+import { createClient } from "@/utils/supabase/client";
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
-import { createClient } from "@/utils/supabase/client";
+import { Button } from "@/components/ui/button";
 
-export function AuthModal({ isOpen, onClose }) {
+export default function AuthModal({ isOpen, onClose }) {
   const supabase = createClient();
 
   const handleGoogleLogin = async () => {
     const { origin } = window.location;
+
     await supabase.auth.signInWithOAuth({
-        provider: "google",
-        options: {
-            redirectTo: `${origin}/auth/callback`,
-        }
+      provider: "google",
+      options: {
+        redirectTo: `${origin}/auth/callback`,
+      },
     });
   };
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogTrigger asChild></DialogTrigger>
-      <DialogContent className="sm:max-w-106.25">
+      <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Edit profile</DialogTitle>
+          <DialogTitle>Sign in to continue</DialogTitle>
           <DialogDescription>
-            Make changes to your profile here. Click save when you&apos;re done.
+            Track product prices and get alerts on price drops
           </DialogDescription>
         </DialogHeader>
+
         <div className="flex flex-col gap-4 py-4">
           <Button
             onClick={handleGoogleLogin}
