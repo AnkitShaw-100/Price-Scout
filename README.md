@@ -1,36 +1,48 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+# Price-Scout
 
-## Getting Started
+Lightweight Next.js app to monitor product prices by scraping product pages and storing price history in Supabase.
 
-First, run the development server:
+## Features
+- Add product by URL — scrapes product name, current price, currency, and image
+- Stores latest product info in `products` table and price snapshots in `price_history`
+- User auth via Supabase
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+## Quick Start
+
+Prerequisites
+- Node.js 18+ (or the version your project uses)
+- A Supabase project with a `products` and `price_history` table and Auth enabled
+- A Firecrawl API key (set `FIRECRAWL_API_KEY`)
+
+Environment
+Create a `.env.local` in the project root with at least:
+
+```
+NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
+SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
+FIRECRAWL_API_KEY=sk_...
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Install and run
 
-You can start editing the page by modifying `app/page.js`. The page auto-updates as you edit the file.
+```bash
+npm install
+npm run dev
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Open `http://localhost:3000` and sign in to add product URLs.
 
-## Learn More
+## Key Files
+- `src/lib/firecrawl.js`: wrapper around the Firecrawl SDK that extracts product data.
+- `src/app/actions.js`: server actions for adding/deleting products and fetching history.
+- `src/utils/supabase/*`: Supabase client helpers used by server actions.
 
-To learn more about Next.js, take a look at the following resources:
+## Database schema (example)
+- `products` table: `id, user_id, url, name, currency, image_url, current_price, updated_at, created_at`
+- `price_history` table: `id, product_id, price, currency, checked_at`
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Troubleshooting
+- If scraping fails with `firecrawl.scrapeUrl is not a function`, ensure the code uses `new Firecrawl(...).v1.scrapeUrl(...)` (see `src/lib/firecrawl.js`).
+- Check the Next.js server terminal for `scrapeProduct result for:` logs to debug scraper output.
+- Verify Supabase keys and that the service role key has insert/update privileges.
