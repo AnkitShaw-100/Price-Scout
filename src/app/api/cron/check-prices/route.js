@@ -13,13 +13,13 @@ export async function POST(request) {
     }
 
     // sanity check: ensure the service role key is available at runtime
-    if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
-      console.error("SUPABASE_SERVICE_ROLE_KEY is missing at runtime");
-      return NextResponse.json(
-        { error: "SUPABASE_SERVICE_ROLE_KEY is missing on the server" },
-        { status: 500 }
-      );
-    }
+    // if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
+    //   console.error("SUPABASE_SERVICE_ROLE_KEY is missing at runtime");
+    //   return NextResponse.json(
+    //     { error: "SUPABASE_SERVICE_ROLE_KEY is missing on the server" },
+    //     { status: 500 }
+    //   );
+    // }
 
     // Use service role to bypass RLS
     const supabase = createClient(
@@ -27,13 +27,27 @@ export async function POST(request) {
       process.env.SUPABASE_SERVICE_ROLE_KEY
     );
 
-    const { data: products, error: productsError } = await supabase
-      .from("products")
-      .select("*");
+    // Diagnostic: log which Supabase URL we're calling (mask the key)
+    console.log("Supabase URL:", process.env.NEXT_PUBLIC_SUPABASE_URL);
+    console.log(
+      "SUPABASE_SERVICE_ROLE_KEY present:",
+      !!process.env.SUPABASE_SERVICE_ROLE_KEY
+    );
 
-    if (productsError) throw productsError;
+    // Fetch products and capture full response for diagnostics
+    const productsRes = await supabase.from("products").select("*");
 
-    console.log(`Found ${products.length} products to check`);
+    if (productsRes.error) {
+      console.error("Error fetching products:", productsRes.error);
+      throw productsRes.error;
+    }
+
+    const products = productsRes.data || [];
+    console.log("Found products response:", {
+      length: products.length,
+      status: productsRes.status,
+      statusText: productsRes.statusText,
+    });
 
     const results = {
       total: products.length,
@@ -55,7 +69,7 @@ export async function POST(request) {
         const newPrice = parseFloat(productData.currentPrice);
         const oldPrice = parseFloat(product.current_price);
 
-        await supabase
+        const updateRes = await supabase
           .from("products")
           .update({
             current_price: newPrice,
@@ -66,30 +80,44 @@ export async function POST(request) {
           })
           .eq("id", product.id);
 
+        if (updateRes.error) {
+          console.error(`Failed to update product ${product.id}:`, updateRes.error);
+          results.failed++;
+          continue;
+        }
+
         if (oldPrice !== newPrice) {
-          await supabase.from("price_history").insert({
+          const insertRes = await supabase.from("price_history").insert({
             product_id: product.id,
             price: newPrice,
             currency: productData.currencyCode || product.currency,
           });
 
+          if (insertRes.error) {
+            console.error(`Failed to insert price_history for ${product.id}:`, insertRes.error);
+          }
+
           results.priceChanges++;
 
           if (newPrice < oldPrice) {
-            const {
-              data: { user },
-            } = await supabase.auth.admin.getUserById(product.user_id);
+            const userRes = await supabase.auth.admin.getUserById(product.user_id);
+            if (userRes.error) {
+              console.error(`Failed to get user ${product.user_id}:`, userRes.error);
+            } else {
+              const user = userRes.data?.user;
+              if (user?.email) {
+                const emailResult = await sendPriceDropAlert(
+                  user.email,
+                  product,
+                  oldPrice,
+                  newPrice
+                );
 
-            if (user?.email) {
-              const emailResult = await sendPriceDropAlert(
-                user.email,
-                product,
-                oldPrice,
-                newPrice
-              );
-
-              if (emailResult.success) {
-                results.alertsSent++;
+                if (emailResult.success) {
+                  results.alertsSent++;
+                } else if (emailResult.error) {
+                  console.error(`Failed to send email to ${user.email}:`, emailResult.error);
+                }
               }
             }
           }
@@ -119,4 +147,4 @@ export async function GET() {
   });
 }
 
-// curl.exe -X POST https://price-scout-xi.vercel.app/api/cron/check-prices -H "Authorization: Bearer 30588d32019b9ed131162c7d3c442703f1e7ddecb98e2b9c143fb90efd141f70"
+// curl.exe -X POST https://price-scout-blush.vercel.app/api/cron/check-prices -H "Authorization: Bearer 30588d32019b9ed131162c7d3c442703f1e7ddecb98e2b9c143fb90efd141f70"
