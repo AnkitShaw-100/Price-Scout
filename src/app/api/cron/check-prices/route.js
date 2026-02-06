@@ -12,6 +12,15 @@ export async function POST(request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    // sanity check: ensure the service role key is available at runtime
+    if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
+      console.error("SUPABASE_SERVICE_ROLE_KEY is missing at runtime");
+      return NextResponse.json(
+        { error: "SUPABASE_SERVICE_ROLE_KEY is missing on the server" },
+        { status: 500 }
+      );
+    }
+
     // Use service role to bypass RLS
     const supabase = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL,
@@ -109,3 +118,5 @@ export async function GET() {
     message: "Price check endpoint is working. Use POST to trigger.",
   });
 }
+
+// curl.exe -X POST https://price-scout-xi.vercel.app/api/cron/check-prices -H "Authorization: Bearer 30588d32019b9ed131162c7d3c442703f1e7ddecb98e2b9c143fb90efd141f70"
