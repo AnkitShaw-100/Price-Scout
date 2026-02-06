@@ -146,5 +146,3 @@ export async function GET() {
     message: "Price check endpoint is working. Use POST to trigger.",
   });
 }
-
-// curl.exe -X POST https://price-scout-blush.vercel.app/api/cron/check-prices -H "Authorization: Bearer 30588d32019b9ed131162c7d3c442703f1e7ddecb98e2b9c143fb90efd141f70"

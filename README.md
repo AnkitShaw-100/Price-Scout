@@ -1,48 +1,53 @@
 # Price-Scout
 
-Lightweight Next.js app to monitor product prices by scraping product pages and storing price history in Supabase.
+Price-Scout is a lightweight Next.js app that monitors product prices by scraping product pages and storing price history in Supabase. It provides user authentication, a simple UI to add product URLs, and scheduled checks to record price changes.
 
-## Features
-- Add product by URL — scrapes product name, current price, currency, and image
-- Stores latest product info in `products` table and price snapshots in `price_history`
-- User auth via Supabase
+**Key features**
+- Add products by URL — automatic scraping of name, price, currency, and image
+- Persist current product data and historical price snapshots in Supabase
+- User authentication via Supabase
+- Server-side cron route for periodic price checks
 
-## Quick Start
+**Tech stack**: Next.js (App Router), Supabase, Firecrawl (scraper)
 
-Prerequisites
-- Node.js 18+ (or the version your project uses)
-- A Supabase project with a `products` and `price_history` table and Auth enabled
-- A Firecrawl API key (set `FIRECRAWL_API_KEY`)
+Getting started
+- Requirements: Node.js 18+, a Supabase project, and a Firecrawl API key (or equivalent scraper)
+- Copy the example env and set values in `.env.local` at the project root
 
-Environment
-Create a `.env.local` in the project root with at least:
+Required environment variables
 
 ```
 NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
-SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
+NEXT_PUBLIC_SUPABASE_ANON_KEY=anon-key
+SUPABASE_SERVICE_ROLE_KEY=service-role-key
 FIRECRAWL_API_KEY=sk_...
 ```
 
-Install and run
+Install and run locally
 
 ```bash
 npm install
 npm run dev
 ```
 
-Open `http://localhost:3000` and sign in to add product URLs.
+Open http://localhost:3000, sign in, and add product URLs to begin tracking prices.
 
-## Key Files
-- `src/lib/firecrawl.js`: wrapper around the Firecrawl SDK that extracts product data.
-- `src/app/actions.js`: server actions for adding/deleting products and fetching history.
-- `src/utils/supabase/*`: Supabase client helpers used by server actions.
+Project structure (important files)
+- `src/app/` — Next.js App Router pages and API routes (including cron route: `src/app/api/cron/check-prices/route.js`)
+- `src/lib/firecrawl.js` — scraper wrapper used to extract product data
+- `src/components/` — UI components (product card, add-product form, chart)
+- `src/utils/supabase/` — Supabase client and server helpers
 
-## Database schema (example)
-- `products` table: `id, user_id, url, name, currency, image_url, current_price, updated_at, created_at`
-- `price_history` table: `id, product_id, price, currency, checked_at`
+Database (high level)
+- `products` table: stores current product data
+- `price_history` table: stores timestamped price snapshots
 
-## Troubleshooting
-- If scraping fails with `firecrawl.scrapeUrl is not a function`, ensure the code uses `new Firecrawl(...).v1.scrapeUrl(...)` (see `src/lib/firecrawl.js`).
-- Check the Next.js server terminal for `scrapeProduct result for:` logs to debug scraper output.
-- Verify Supabase keys and that the service role key has insert/update privileges.
+Notes
+- Ensure the Supabase service role key is kept secret and used only on the server.
+- The cron check route is implemented as a server route — adapt scheduling to your deployment environment.
+
+Contributing
+- Fork, add a branch, and open a PR with a clear description of changes.
+
+License
+- MIT

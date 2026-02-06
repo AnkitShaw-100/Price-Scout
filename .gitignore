@@ -19,6 +19,7 @@
 
 # production
 /build
+curl.txt 
 
 # misc
 .DS_Store
